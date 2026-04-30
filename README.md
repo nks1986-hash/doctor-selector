@@ -1,4 +1,4 @@
-# Doctor Selector — Medical Triage Chatbot
+# Doctor AI Assistant — Medical Triage Chatbot
 
 A simple chatbot that asks a patient for symptoms and uses OpenAI's ChatGPT
 to suggest the most appropriate medical specialty (e.g. Cardiologist,
@@ -73,7 +73,7 @@ npm run dev
 You should see:
 
 ```text
-Doctor Selector running at http://localhost:3000
+Doctor AI Assistant running at http://localhost:3000
 ```
 
 ### 5. Use the app
