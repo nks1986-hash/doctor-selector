@@ -76,7 +76,10 @@
   // Greet the patient once on load.
   addBubble(
     'bot',
-    "Hi! I'm your triage assistant. Tell me what symptoms you're experiencing — I may ask a few quick follow-up questions before recommending the right kind of doctor."
+    "Hello! \uD83D\uDC4B I'm here to help you find the right doctor. " +
+      "Just tell me what's bothering you \u2014 like \"I have a fever\" or " +
+      "\"my stomach hurts\" \u2014 and I'll ask a couple of simple questions " +
+      "before suggesting which type of doctor you should see."
   );
 
   inputEl.focus();
