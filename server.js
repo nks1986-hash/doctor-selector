@@ -11,7 +11,8 @@ const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 
-const { getDoctorSpecialty, DEFAULT_SPECIALTY } = require('./api');
+const { nextTriageTurn, DEFAULT_SPECIALTY } = require('./api');
+const { getDoctorsForSpecialty } = require('./doctors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,33 +47,80 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 /**
  * POST /api/triage
- * body: { symptoms: string }
- * res:  { specialty: string, message: string }
+ * body: {
+ *   messages: Array<{ role: 'user'|'assistant', content: string }>
+ * }
+ * The full conversation so far is sent on every call. The assistant
+ * messages should be the raw JSON directives previously returned by
+ * this endpoint (the frontend stores them verbatim).
+ *
+ * res (asking a follow-up):
+ *   { action: 'ask', question: string, assistantMessage: string }
+ * res (final recommendation):
+ *   { action: 'finalize', specialty, message, doctors, assistantMessage }
  */
 app.post('/api/triage', async (req, res) => {
-  const symptoms = (req.body?.symptoms || '').toString().trim();
+  const rawMessages = Array.isArray(req.body?.messages) ? req.body.messages : null;
 
-  if (!symptoms) {
+  // Backward-compat: accept { symptoms: "..." } as a single user turn.
+  let history;
+  if (rawMessages) {
+    history = rawMessages
+      .filter(
+        (m) =>
+          m &&
+          (m.role === 'user' || m.role === 'assistant') &&
+          typeof m.content === 'string' &&
+          m.content.trim()
+      )
+      .slice(-20) // hard cap to keep prompts small
+      .map((m) => ({ role: m.role, content: m.content.toString() }));
+  } else {
+    const symptoms = (req.body?.symptoms || '').toString().trim();
+    history = symptoms ? [{ role: 'user', content: symptoms }] : [];
+  }
+
+  if (history.length === 0 || history[history.length - 1].role !== 'user') {
     return res.status(400).json({
       error: 'Please describe your symptoms.',
     });
   }
 
   try {
-    const specialty = await getDoctorSpecialty(symptoms);
-    logQuery(symptoms, specialty);
+    const result = await nextTriageTurn(history);
+    const assistantMessage = JSON.stringify(result);
+
+    if (result.action === 'ask') {
+      return res.json({
+        action: 'ask',
+        question: result.question,
+        assistantMessage,
+      });
+    }
+
+    // finalize
+    const specialty = result.specialty || DEFAULT_SPECIALTY;
+    const doctors = getDoctorsForSpecialty(specialty);
+    const lastUser = [...history].reverse().find((m) => m.role === 'user');
+    logQuery(lastUser ? lastUser.content : '', specialty);
     return res.json({
+      action: 'finalize',
       specialty,
-      message: `You should consult a ${specialty}.`,
+      message: `Based on what you've shared, you should consult a ${specialty}.`,
+      doctors,
+      assistantMessage,
     });
   } catch (err) {
-    // Never leak internals; fall back to a safe default.
     console.error('[triage] OpenAI error:', err.message);
+    const fallback = { action: 'finalize', specialty: DEFAULT_SPECIALTY };
     return res.status(200).json({
+      action: 'finalize',
       specialty: DEFAULT_SPECIALTY,
       message:
         `I couldn't analyze that confidently right now. ` +
         `As a safe default, please consult a ${DEFAULT_SPECIALTY}.`,
+      doctors: getDoctorsForSpecialty(DEFAULT_SPECIALTY),
+      assistantMessage: JSON.stringify(fallback),
       degraded: true,
     });
   }

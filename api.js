@@ -1,15 +1,22 @@
 // api.js
 // -------------------------------------------------------------
-// Thin wrapper around the OpenAI Chat Completions API.
-// Keeps all model-specific logic in one place so server.js stays
-// focused on HTTP concerns.
+// Multi-turn triage assistant powered by OpenAI Chat Completions.
+//
+// The model decides on its own whether to:
+//   1. Ask the patient a clarifying follow-up question, OR
+//   2. Finalize the recommended medical specialty.
+//
+// We signal "done" by asking the model to emit a JSON object:
+//     { "action": "ask",     "question": "..." }
+//     { "action": "finalize","specialty": "Cardiologist" }
+//
+// Anything else / parse failure falls back to General Physician.
 // -------------------------------------------------------------
 
 const OpenAI = require('openai');
 
-// A whitelist of specialties we are willing to surface to the user.
-// If the model returns something outside this list (or nothing useful)
-// we fall back to "General Physician".
+// Whitelist of specialties we surface to the user. Anything outside
+// this list is collapsed into "General Physician".
 const ALLOWED_SPECIALTIES = [
   'Cardiologist',
   'Dermatologist',
@@ -33,9 +40,26 @@ const ALLOWED_SPECIALTIES = [
 ];
 
 const DEFAULT_SPECIALTY = 'General Physician';
+const MAX_FOLLOWUPS = 3;
 
-// Lazily construct the client so missing env vars surface a clean error
-// at request time rather than at module load time.
+const SYSTEM_PROMPT = `You are a medical triage assistant. Your job is to suggest the most appropriate medical specialty for the patient.
+
+You may ask the patient up to ${MAX_FOLLOWUPS} short clarifying questions (one at a time) about their symptoms — for example: duration, severity, location, related symptoms, age group, or relevant history — BEFORE finalizing.
+
+When you still need more information, respond with EXACTLY this JSON (no prose, no markdown):
+{"action":"ask","question":"<one short question>"}
+
+When you have enough information, respond with EXACTLY this JSON (no prose, no markdown):
+{"action":"finalize","specialty":"<one specialty from the allowed list>"}
+
+Allowed specialties (use the exact spelling): ${ALLOWED_SPECIALTIES.join(', ')}.
+
+Rules:
+- Always reply with a SINGLE JSON object and nothing else.
+- Ask at most ${MAX_FOLLOWUPS} follow-up questions total across the whole conversation.
+- After ${MAX_FOLLOWUPS} follow-ups (or sooner if confident), you MUST finalize.
+- If the symptoms are vague or non-medical, finalize with "General Physician".`;
+
 let _client = null;
 function getClient() {
   if (_client) return _client;
@@ -47,112 +71,111 @@ function getClient() {
   return _client;
 }
 
-/**
- * Build the structured prompt sent to ChatGPT.
- * Keeping this as a pure function makes it trivial to unit-test.
- */
-function buildPrompt(symptoms) {
-  return (
-    `Patient symptoms: ${symptoms}\n` +
-    `Task: Based on these symptoms, identify the most appropriate medical ` +
-    `specialty (e.g., cardiologist, dermatologist, neurologist, general ` +
-    `physician, etc.).\n` +
-    `Return only the doctor category.`
-  );
-}
-
-/**
- * Normalize whatever the model returned into one of ALLOWED_SPECIALTIES.
- * Returns DEFAULT_SPECIALTY when nothing sensible can be extracted.
- */
 function normalizeSpecialty(rawText) {
   if (!rawText || typeof rawText !== 'string') return DEFAULT_SPECIALTY;
-
-  // Strip punctuation, articles, and trailing words like "doctor".
-  const cleaned = rawText
-    .replace(/[`*_."'\n\r]/g, ' ')
-    .replace(/\b(a|an|the|see|consult|visit|doctor|specialist)\b/gi, ' ')
-    .trim()
-    .toLowerCase();
-
+  const cleaned = rawText.trim().toLowerCase();
   if (!cleaned) return DEFAULT_SPECIALTY;
-
-  // Try direct match against the whitelist.
   for (const specialty of ALLOWED_SPECIALTIES) {
     if (cleaned.includes(specialty.toLowerCase())) return specialty;
   }
-
-  // Common synonyms / loose matches.
-  const synonyms = {
-    heart: 'Cardiologist',
-    skin: 'Dermatologist',
-    brain: 'Neurologist',
-    nerve: 'Neurologist',
-    stomach: 'Gastroenterologist',
-    digest: 'Gastroenterologist',
-    lung: 'Pulmonologist',
-    breath: 'Pulmonologist',
-    bone: 'Orthopedist',
-    joint: 'Orthopedist',
-    diabet: 'Endocrinologist',
-    hormone: 'Endocrinologist',
-    eye: 'Ophthalmologist',
-    ear: 'ENT Specialist',
-    nose: 'ENT Specialist',
-    throat: 'ENT Specialist',
-    mental: 'Psychiatrist',
-    anxiet: 'Psychiatrist',
-    depress: 'Psychiatrist',
-    urin: 'Urologist',
-    kidney: 'Nephrologist',
-    pregnan: 'Gynecologist',
-    child: 'Pediatrician',
-    cancer: 'Oncologist',
-    tumor: 'Oncologist',
-    arthrit: 'Rheumatologist',
-    allerg: 'Allergist',
-    tooth: 'Dentist',
-    dental: 'Dentist',
-  };
-  for (const key of Object.keys(synonyms)) {
-    if (cleaned.includes(key)) return synonyms[key];
-  }
-
   return DEFAULT_SPECIALTY;
 }
 
 /**
- * Ask ChatGPT which specialty fits the given symptoms.
- * Always resolves to a string from ALLOWED_SPECIALTIES.
+ * Try to parse the model output as our control JSON.
+ * Returns one of:
+ *   { action: 'ask', question: string }
+ *   { action: 'finalize', specialty: string }   // specialty normalized
+ *   null   // unparseable
  */
-async function getDoctorSpecialty(symptoms) {
+function parseModelDirective(rawText) {
+  if (!rawText || typeof rawText !== 'string') return null;
+  const match = rawText.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  let obj;
+  try {
+    obj = JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+  if (
+    obj &&
+    obj.action === 'ask' &&
+    typeof obj.question === 'string' &&
+    obj.question.trim()
+  ) {
+    return { action: 'ask', question: obj.question.trim() };
+  }
+  if (obj && obj.action === 'finalize') {
+    return { action: 'finalize', specialty: normalizeSpecialty(obj.specialty) };
+  }
+  return null;
+}
+
+/** How many follow-up questions the assistant has already asked. */
+function countAssistantQuestions(history) {
+  if (!Array.isArray(history)) return 0;
+  let n = 0;
+  for (const m of history) {
+    if (m && m.role === 'assistant' && typeof m.content === 'string') {
+      const parsed = parseModelDirective(m.content);
+      if (parsed && parsed.action === 'ask') n++;
+    }
+  }
+  return n;
+}
+
+/**
+ * Drive one turn of the triage conversation.
+ * @param {Array<{role:'user'|'assistant', content:string}>} history
+ */
+async function nextTriageTurn(history) {
   const client = getClient();
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  const prompt = buildPrompt(symptoms);
+
+  const askedSoFar = countAssistantQuestions(history);
+  const mustFinalize = askedSoFar >= MAX_FOLLOWUPS;
+
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...history,
+  ];
+
+  if (mustFinalize) {
+    messages.push({
+      role: 'system',
+      content:
+        'You have already asked the maximum number of follow-up questions. ' +
+        'You MUST now respond with a finalize JSON object.',
+    });
+  }
 
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.2,
-    max_tokens: 20,
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You are a medical triage assistant. Reply with ONLY the name ' +
-          'of the most appropriate medical specialty, no extra words.',
-      },
-      { role: 'user', content: prompt },
-    ],
+    max_tokens: 120,
+    messages,
+    response_format: { type: 'json_object' },
   });
 
   const raw = completion?.choices?.[0]?.message?.content ?? '';
-  return normalizeSpecialty(raw);
+  const parsed = parseModelDirective(raw);
+
+  if (!parsed) {
+    return { action: 'finalize', specialty: DEFAULT_SPECIALTY };
+  }
+  if (parsed.action === 'ask' && mustFinalize) {
+    return { action: 'finalize', specialty: DEFAULT_SPECIALTY };
+  }
+  return parsed;
 }
 
 module.exports = {
-  getDoctorSpecialty,
+  nextTriageTurn,
+  parseModelDirective,
   normalizeSpecialty,
-  buildPrompt,
+  countAssistantQuestions,
   ALLOWED_SPECIALTIES,
   DEFAULT_SPECIALTY,
+  MAX_FOLLOWUPS,
 };

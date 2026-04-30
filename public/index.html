@@ -16,26 +16,14 @@
       <section id="messages" class="messages" aria-live="polite"></section>
 
       <form id="chat-form" class="composer" autocomplete="off">
-        <label for="symptom-quick" class="sr-only">Quick symptoms</label>
-        <select id="symptom-quick" class="quick-select">
-          <option value="">Quick symptoms…</option>
-          <option>Chest pain and shortness of breath</option>
-          <option>Persistent skin rash and itching</option>
-          <option>Severe headache and dizziness</option>
-          <option>Stomach pain and nausea</option>
-          <option>Joint pain and swelling</option>
-          <option>Blurred vision and eye irritation</option>
-          <option>Sore throat, cough and runny nose</option>
-          <option>Anxiety and trouble sleeping</option>
-          <option>High fever and body ache</option>
-        </select>
-
+        <label for="symptom-input" class="sr-only">Describe your symptoms</label>
         <input
           id="symptom-input"
           class="symptom-input"
           type="text"
-          placeholder="e.g. I have chest pain and shortness of breath"
+          placeholder="Type your symptoms… e.g. I have chest pain and shortness of breath"
           required
+          autofocus
         />
         <button id="send-btn" type="submit">Send</button>
       </form>
