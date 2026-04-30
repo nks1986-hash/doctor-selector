@@ -1,0 +1,13 @@
+# Local-only / build artifacts that should NOT be uploaded to Vercel.
+node_modules
+.git
+.github
+logs
+*.log
+README.md
+.env
+.env.*
+.vscode
+.idea
+.DS_Store
+Thumbs.db

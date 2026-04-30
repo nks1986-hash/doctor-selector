@@ -65,7 +65,10 @@ function getClient() {
   if (_client) return _client;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set. Add it to your .env file.');
+    const where = process.env.VERCEL
+      ? 'the Vercel project Environment Variables (Settings → Environment Variables)'
+      : 'your local .env file';
+    throw new Error(`OPENAI_API_KEY is not set. Add it to ${where}.`);
   }
   _client = new OpenAI({ apiKey });
   return _client;
