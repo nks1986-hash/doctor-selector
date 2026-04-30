@@ -113,6 +113,42 @@ Get-NetTCPConnection -LocalPort 3000 -State Listen |
 | `EADDRINUSE :::3000` | Another process owns port 3000 — change `PORT` in `.env` or kill the other process (see step 6). |
 | `npm install` fails | Ensure Node 18+ is installed: `node -v`. |
 
+## Deploy to Vercel
+
+This repo ships ready for Vercel:
+
+| File | Purpose |
+| --- | --- |
+| [app.js](app.js) | Express app factory (no `listen` call). |
+| [api/index.js](api/index.js) | Vercel serverless entry that exports the app. |
+| [vercel.json](vercel.json) | Routes all traffic to the serverless function. |
+| [.vercelignore](.vercelignore) | Excludes `node_modules`, `logs`, `.env`, etc. |
+
+### One-time setup
+
+1. Push this repo to GitHub.
+2. In <https://vercel.com> click **Add New Project** \u2192 import the repo.
+3. Under **Environment Variables** add:
+   - `OPENAI_API_KEY` = your key
+   - `OPENAI_MODEL` = `gpt-4o-mini` (optional)
+4. Click **Deploy**. No build command is required.
+
+### Or deploy from the CLI
+
+```powershell
+npm install -g vercel
+vercel login
+vercel            # preview deployment
+vercel --prod     # production deployment
+```
+
+After deploy, `https://<your-app>.vercel.app/` serves the chat UI and
+`POST https://<your-app>.vercel.app/api/triage` exposes the API.
+
+> Note: Vercel's filesystem is read-only, so the `logs/queries.log`
+> writer is automatically disabled when running on Vercel
+> (`process.env.VERCEL` is set).
+
 ## API
 
 `POST /api/triage`
