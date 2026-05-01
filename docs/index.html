@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor AI Assistant | Judge Review</title>
+  <meta name="description" content="Judge review page for Doctor AI Assistant, an AI-powered symptom triage application that recommends the right medical specialist.">
+  <style>
+    :root {
+      --bg: #f4efe4;
+      --surface: rgba(255, 252, 246, 0.86);
+      --surface-strong: #fffaf1;
+      --ink: #16302b;
+      --muted: #4e665f;
+      --accent: #0f8a6f;
+      --accent-deep: #0c6854;
+      --accent-soft: #dff4ed;
+      --line: rgba(22, 48, 43, 0.12);
+      --shadow: 0 24px 60px rgba(14, 45, 40, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --max-width: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, Cambria, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(15, 138, 111, 0.18), transparent 34%),
+        radial-gradient(circle at top right, rgba(214, 146, 67, 0.14), transparent 30%),
+        linear-gradient(180deg, #f8f4ea 0%, var(--bg) 100%);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page-shell {
+      width: min(calc(100% - 32px), var(--max-width));
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 0 22px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: "Segoe UI Variable Display", "Aptos Display", "Trebuchet MS", sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+    }
+
+    .brand-mark {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #8fd4c0);
+      box-shadow: 0 0 0 8px rgba(15, 138, 111, 0.12);
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, rgba(255, 251, 244, 0.92), rgba(232, 245, 239, 0.92));
+      box-shadow: var(--shadow);
+      padding: 42px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -80px;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(15, 138, 111, 0.16), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(15, 138, 111, 0.18);
+      font-family: "Segoe UI Variable Display", "Aptos Display", "Trebuchet MS", sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--accent-deep);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      line-height: 1.08;
+      font-family: "Segoe UI Variable Display", "Aptos Display", "Trebuchet MS", sans-serif;
+    }
+
+    h1 {
+      margin-top: 18px;
+      font-size: clamp(2.4rem, 5vw, 4.8rem);
+      max-width: 12ch;
+    }
+
+    .hero-copy {
+      margin-top: 18px;
+      max-width: 63ch;
+      font-size: 1.12rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 26px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-family: "Segoe UI Variable Display", "Aptos Display", "Trebuchet MS", sans-serif;
+      font-weight: 700;
+      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    .button:hover,
+    .button:focus-visible {
+      transform: translateY(-2px);
+    }
+
+    .button-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      box-shadow: 0 16px 28px rgba(15, 138, 111, 0.26);
+    }
+
+    .button-secondary {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(22, 48, 43, 0.12);
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .stat {
+      padding: 16px 18px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(22, 48, 43, 0.08);
+    }
+
+    .stat strong {
+      display: block;
+      font-family: "Segoe UI Variable Display", "Aptos Display", "Trebuchet MS", sans-serif;
+      font-size: 1.3rem;
+      margin-bottom: 4px;
+    }
+
+    .section {
+      margin-top: 28px;
+      padding: 30px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      box-shadow: 0 10px 28px rgba(22, 48, 43, 0.05);
+      animation: rise 520ms ease both;
+    }
+
+    .section-lead {
+      margin-top: 12px;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 70ch;
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 22px;
+      border-radius: var(--radius-md);
+      background: var(--surface-strong);
+      border: 1px solid rgba(22, 48, 43, 0.08);
+    }
+
+    .card h3 {
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+
+    .card p,
+    .card li,
+    .checklist li,
+    .prompt,
+    .note {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .feature-list,
+    .checklist,
+    .prompt-list,
+    .timeline {
+      margin: 16px 0 0;
+      padding-left: 20px;
+    }
+
+    .feature-list li,
+    .checklist li,
+    .timeline li {
+      margin-top: 10px;
+    }
+
+    .prompt-list {
+      list-style: none;
+      padding-left: 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .prompt {
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(15, 138, 111, 0.12);
+    }
+
+    .video-frame {
+      padding: 16px;
+      border-radius: 22px;
+      background: #102924;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    video {
+      width: 100%;
+      display: block;
+      border-radius: 14px;
+      background: #09120f;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(15, 138, 111, 0.08);
+      color: var(--accent-deep);
+      font-family: "Segoe UI Variable Display", "Aptos Display", "Trebuchet MS", sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding: 20px 4px 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .hero,
+      .section {
+        padding: 24px;
+      }
+
+      .grid-two,
+      .grid-three,
+      .hero-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-shell {
+        width: min(calc(100% - 20px), var(--max-width));
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .hero-actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Doctor AI Assistant</span>
+      </div>
+      <div>Judge review page for hackathon evaluation</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">AI Healthcare Triage</div>
+        <h1>Helping patients reach the right specialist faster.</h1>
+        <p class="hero-copy">
+          Doctor AI Assistant is a live, end-to-end web application that converts plain-language symptom descriptions into a practical medical specialty recommendation. It solves a simple but costly user problem: patients know what they feel, but often do not know which doctor they should see first.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="https://doctor-selector-six.vercel.app/" target="_blank" rel="noreferrer">Open Live Demo</a>
+          <a class="button button-secondary" href="https://github.com/nks1986-hash/doctor-selector" target="_blank" rel="noreferrer">Open GitHub Repo</a>
+          <a class="button button-secondary" href="#demo-video">Watch Demo Video</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <strong>Live</strong>
+            <span>Deployed and ready for review</span>
+          </div>
+          <div class="stat">
+            <strong>AI-Powered</strong>
+            <span>Specialty recommendation through OpenAI</span>
+          </div>
+          <div class="stat">
+            <strong>Practical</strong>
+            <span>Focused on a clear healthcare access problem</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section grid grid-two">
+        <div class="card">
+          <h2>The Problem</h2>
+          <p>
+            Patients frequently lose time and money by choosing the wrong specialist for their first consultation. This is especially common when symptoms are vague, overlap multiple conditions, or appear outside normal clinic hours.
+          </p>
+          <ul class="feature-list">
+            <li>Unclear symptoms lead to trial-and-error appointments.</li>
+            <li>Care is delayed when the first doctor is not the right fit.</li>
+            <li>Many users need fast guidance before speaking to a hospital or clinic.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>The Solution</h2>
+          <p>
+            The app offers a conversational triage experience. Users describe symptoms in natural language, the backend applies structured prompting with OpenAI, and the system recommends the most suitable doctor category.
+          </p>
+          <ul class="feature-list">
+            <li>Simple chat-based symptom capture.</li>
+            <li>Backend prompt constraints to keep responses focused.</li>
+            <li>Safe fallback to <strong>General Physician</strong> when certainty is low.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section" id="demo-video">
+        <h2>Demo Video</h2>
+        <p class="section-lead">
+          This walkthrough shows the live product flow, including symptom entry and specialist recommendation.
+        </p>
+        <div class="video-frame">
+          <video controls preload="metadata">
+            <source src="./demo-video.mp4" type="video/mp4">
+            Your browser does not support embedded video. Use the direct link below.
+          </video>
+        </div>
+        <div class="pill-row">
+          <a class="pill" href="./demo-video.mp4">Direct Video Link</a>
+          <a class="pill" href="https://doctor-selector-six.vercel.app/" target="_blank" rel="noreferrer">Launch App</a>
+          <a class="pill" href="https://github.com/nks1986-hash/doctor-selector" target="_blank" rel="noreferrer">Source Code</a>
+        </div>
+      </section>
+
+      <section class="section grid grid-two">
+        <div>
+          <h2>What Judges Can Evaluate Quickly</h2>
+          <ul class="checklist">
+            <li><strong>Clarity:</strong> the problem statement is easy to understand in under 30 seconds.</li>
+            <li><strong>Functionality:</strong> the product is live and produces specialty recommendations from real symptom input.</li>
+            <li><strong>Product thinking:</strong> the flow is simple, useful, and positioned for real-world extension.</li>
+            <li><strong>Technical completeness:</strong> frontend, backend, AI integration, and deployment are all working together.</li>
+          </ul>
+        </div>
+        <div>
+          <h2>Suggested Test Prompts</h2>
+          <ul class="prompt-list">
+            <li class="prompt">&quot;I have chest pain and shortness of breath.&quot;</li>
+            <li class="prompt">&quot;I have a persistent skin rash and itching for two weeks.&quot;</li>
+            <li class="prompt">&quot;I have frequent headaches, dizziness, and blurred vision.&quot;</li>
+            <li class="prompt">&quot;I have ear pain and reduced hearing in one ear.&quot;</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Evaluation Flow</h2>
+        <ol class="timeline">
+          <li>Open the live app and enter one of the sample symptom prompts.</li>
+          <li>Observe the chat-based interaction and the resulting specialist recommendation.</li>
+          <li>Review the demo video for a concise end-to-end walkthrough.</li>
+          <li>Inspect the repository to verify the implementation is organized and deployable.</li>
+          <li>Assess future scalability across telemedicine intake, hospital routing, and multilingual support.</li>
+        </ol>
+      </section>
+
+      <section class="section grid grid-three">
+        <div class="card">
+          <h3>Frontend</h3>
+          <p>HTML, CSS, and JavaScript power a responsive chat interface designed for fast symptom capture and low friction during demos.</p>
+        </div>
+        <div class="card">
+          <h3>Backend</h3>
+          <p>Node.js and Express handle API requests and keep the OpenAI key on the server side rather than exposing it in the browser.</p>
+        </div>
+        <div class="card">
+          <h3>AI Layer</h3>
+          <p>OpenAI is used with constrained prompting to map symptom descriptions to an appropriate medical specialty and avoid vague output.</p>
+        </div>
+      </section>
+
+      <section class="section grid grid-two">
+        <div class="card">
+          <h2>Impact</h2>
+          <p>
+            Doctor AI Assistant demonstrates a practical application of AI in healthcare access. Instead of replacing medical professionals, it improves the first routing decision and reduces uncertainty for patients.
+          </p>
+          <div class="pill-row">
+            <span class="pill">Faster specialist matching</span>
+            <span class="pill">Lower confusion</span>
+            <span class="pill">Deployable today</span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Next Steps</h2>
+          <p>
+            The current version is intentionally lightweight, but the roadmap is strong: urgency scoring, appointment routing, multilingual interaction, and clinic-specific specialist networks.
+          </p>
+          <p class="note">
+            This project is an informational triage assistant, not a diagnostic or treatment system.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <strong>Disclaimer:</strong> Doctor AI Assistant is designed to assist with specialty guidance only. It does not provide diagnosis, emergency evaluation, or treatment advice. Medical decisions should always be made with qualified professionals.
+    </footer>
+  </div>
+</body>
+</html>
