@@ -5,9 +5,14 @@ to suggest the most appropriate medical specialty (e.g. Cardiologist,
 Dermatologist, …). Falls back to **General Physician** when the model
 response is unclear.
 
+## Demo
+
+- Hackathon demo page: <https://nks1986-hash.github.io/doctor-selector>
+- Live app: <https://doctor-selector-six.vercel.app/>
+
 ## Project layout
 
-```
+```text
 doctor-selector/
 ├── api.js            # OpenAI integration (prompt + response parsing)
 ├── server.js         # Express backend, exposes POST /api/triage
