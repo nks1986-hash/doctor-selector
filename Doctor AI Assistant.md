@@ -46,16 +46,11 @@ Patients often waste valuable time and money visiting the wrong type of speciali
 - **GitHub Repository:** [https://github.com/nks1986-hash/doctor-selector](https://github.com/nks1986-hash/doctor-selector)
 - **Live Deployment:** [https://doctor-selector-six.vercel.app/](https://doctor-selector-six.vercel.app/)
 
-### 🎬 3-Minute Video Demo
+### 🎬 Video Demo
 
-> *Embed or link your demo video here.*
-
-```text
-[ Demo Video Placeholder ]
-```
-
-Replace this section with the video link or embed once available, e.g.:
-`[Watch the Demo](https://your-video-link.com)`
+<video src="demo-video.mp4" controls width="100%">
+  <a href="demo-video.mp4">Download / Watch the Demo</a>
+</video>
 
 ---
 
